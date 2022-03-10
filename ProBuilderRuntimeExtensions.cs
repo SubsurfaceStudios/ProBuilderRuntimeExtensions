@@ -4,7 +4,7 @@ using UnityEngine.ProBuilder;
 using UnityEngine.ProBuilder.MeshOperations;
 using System.Linq;
 
-namespace CompensationVR.CustomRooms.Operations
+namespace SubsurfaceStudios.MeshOperations
 {
     public static class MeshOperations
     {
