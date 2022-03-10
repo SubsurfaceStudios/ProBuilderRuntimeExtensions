@@ -129,5 +129,40 @@ namespace SubsurfaceStudios.MeshOperations
 
             mesh.RotateVertices(origin, rotation, vertices.Distinct().ToArray());
         }
+        
+        public static Vector3 AveragePositionOfVertices(this ProBuilderMesh mesh, params int[] vertices)
+        {
+            var MeshVertices = mesh.GetVertices();
+
+            var Average = Vector3.zero;
+
+            for(int i = 0; i < MeshVertices.Length; i++)
+            {
+                if (!vertices.Contains(i)) continue;
+                Average += MeshVertices[i].position;
+            }
+
+            Average /= vertices.Length;
+
+            return Average;
+        }
+
+        public static Vector3 AveragePositionOfFace(this ProBuilderMesh mesh, Face face)
+        {
+            var MeshVertices = mesh.GetVertices();
+
+            var Average = Vector3.zero;
+
+            for(int i = 0; i < MeshVertices.Length; i++)
+            {
+                if (!face.indexes.Contains(i)) continue;
+
+                Average += MeshVertices[i].position;
+            }
+
+            Average /= face.indexes.Count;
+
+            return Average;
+        }
     }
 }
