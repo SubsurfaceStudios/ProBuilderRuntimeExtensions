@@ -20,6 +20,8 @@ namespace SubsurfaceStudios.MeshOperations
             _gameObject.name = name;
             _gameObject.transform.SetPositionAndRotation(position, rotation);
 
+            _gameObject.GetComponent<Renderer>().allowOcclusionWhenDynamic = false;
+
             return pbm;
         }
 
@@ -33,6 +35,8 @@ namespace SubsurfaceStudios.MeshOperations
 
         public static void MoveVertices(this ProBuilderMesh mesh, Vector3 movement, params int[] vertices)
         {
+            vertices = mesh.FilterUnconnectedVertices(vertices);
+
             mesh.TranslateVerticesInWorldSpace(vertices, movement);
             mesh.ToMesh(MeshTopology.Triangles);
             mesh.Refresh();
@@ -55,6 +59,8 @@ namespace SubsurfaceStudios.MeshOperations
 
         public static void ScaleVertices(this ProBuilderMesh mesh, Vector3 origin, float scaleFactor, params int[] vertices)
         {
+            vertices = mesh.FilterUnconnectedVertices(vertices);
+
             origin = mesh.transform.InverseTransformPoint(origin);
             
             var MeshVertices = mesh.GetVertices();
@@ -89,15 +95,13 @@ namespace SubsurfaceStudios.MeshOperations
 
         public static void RotateVertices(this ProBuilderMesh mesh, Vector3 origin, Quaternion rotation, params int[] vertices)
         {
+            vertices = mesh.FilterUnconnectedVertices(vertices);
+
             origin = mesh.transform.InverseTransformPoint(origin);
 
             var MeshVertices = mesh.GetVertices();
-
-
-            var AlreadyOperated = new List<int>();
             for(int i = 0; i < MeshVertices.Length; i++)
             {
-                if (AlreadyOperated.Contains(i)) continue;
                 if (!vertices.Contains(i)) continue;
 
                 var item = MeshVertices[i];
@@ -107,11 +111,6 @@ namespace SubsurfaceStudios.MeshOperations
                 var offset = newPosition - item.position;
 
                 mesh.MoveVertices(offset, i);
-
-                List<int> coincident = new List<int>();
-                mesh.GetCoincidentVertices(i, coincident);
-
-                AlreadyOperated.AddRange(coincident);
             }
         }
 
@@ -129,7 +128,7 @@ namespace SubsurfaceStudios.MeshOperations
 
             mesh.RotateVertices(origin, rotation, vertices.Distinct().ToArray());
         }
-        
+
         public static Vector3 AveragePositionOfVertices(this ProBuilderMesh mesh, params int[] vertices)
         {
             var MeshVertices = mesh.GetVertices();
@@ -163,6 +162,48 @@ namespace SubsurfaceStudios.MeshOperations
             Average /= face.indexes.Count;
 
             return Average;
+        }
+
+        public static void MergeVerticesCustom(this ProBuilderMesh mesh, MergeVertexMode mode = MergeVertexMode.AtAveragePosition, params int[] vertices)
+        {
+            if (vertices.Length < 2) return;
+
+            vertices = mesh.FilterUnconnectedVertices(vertices);
+
+            Vector3 position = mode switch
+            {
+                MergeVertexMode.AtAveragePosition => mesh.AveragePositionOfVertices(vertices),
+                MergeVertexMode.AtFirstVertex => mesh.GetVertices()[vertices[0]].position,
+                MergeVertexMode.AtLastVertex => mesh.GetVertices()[vertices[vertices.Length]].position,
+                _ => mesh.AveragePositionOfVertices(vertices)
+            };
+
+
+            var Vertices = mesh.GetVertices();
+            for (int i = 0; i < Vertices.Length; i++)
+            {
+                if (!vertices.Contains(i)) continue;
+                mesh.MoveVertices(position - Vertices[i].position, i);
+            }
+
+            mesh.SetVerticesCoincident(vertices);
+            mesh.ToMesh(MeshTopology.Triangles);
+            mesh.Refresh();
+        }
+
+        public static int[] FilterUnconnectedVertices(this ProBuilderMesh mesh, params int[] vertices)
+        {
+            List<int> ReturnedVertices = vertices.ToList();
+
+            foreach(var item in vertices)
+            {
+                foreach (var v in mesh.GetCoincidentVertices(new int[] { item }))
+                {
+                    ReturnedVertices.Remove(v);
+                }
+            }
+
+            return ReturnedVertices.ToArray();
         }
     }
 }
