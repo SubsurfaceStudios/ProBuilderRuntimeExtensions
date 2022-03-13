@@ -205,5 +205,26 @@ namespace SubsurfaceStudios.MeshOperations
 
             return ReturnedVertices.ToArray();
         }
+        
+        public static int FindClosestVertexOnFace(this ProBuilderMesh mesh, int face, Vector3 position)
+        {
+            var faces = mesh.faces;
+            var vertices = mesh.VerticesInWorldSpace();
+
+            KeyValuePair<int, float> Closest;
+            var first = faces[face].indexes[0];
+            Closest = new KeyValuePair<int, float>(first, Vector3.Distance(position, vertices[first]));
+            for(int i = 1; i < faces[face].indexes.Count; i++)
+            {
+                var index = faces[face].indexes[i];
+                var vertexPosition = vertices[index];
+
+                var distance = Vector3.Distance(vertexPosition, position);
+
+                if (distance < Closest.Value) Closest = new KeyValuePair<int, float>(index, distance);
+            }
+
+            return Closest.Key;
+        }
     }
 }
