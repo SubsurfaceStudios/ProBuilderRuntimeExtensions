@@ -227,4 +227,11 @@ namespace SubsurfaceStudios.MeshOperations
             return Closest.Key;
         }
     }
+
+    public enum MergeVertexMode
+    {
+        AtAveragePosition = 0,
+        AtFirstVertex = 1,
+        AtLastVertex = 2
+    }
 }
